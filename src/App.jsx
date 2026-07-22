@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+// useStateとuseEffectは後で使用します（Task 6で追加）
 
 // メモアプリのメインコンポーネント
 function App() {
