@@ -4,18 +4,17 @@ import { getDatabase, saveDatabase } from '../database/database'
  * メモを削除する関数
  * @param {number} id - メモのID
  * @returns {boolean} 成功したかどうか
+ * @throws {Error} データベース操作に失敗した場合
  */
 export function deleteMemo(id) {
   const db = getDatabase()
   if (!db) {
-    console.error('データベースが利用できません')
-    return false
+    throw new Error('データベースが利用できません')
   }
 
   // 入力値のバリデーション
   if (!id) {
-    console.error('IDは必須です')
-    return false
+    throw new Error('IDは必須です')
   }
 
   try {
@@ -29,6 +28,6 @@ export function deleteMemo(id) {
     return true
   } catch (error) {
     console.error('メモの削除に失敗しました:', error)
-    return false
+    throw new Error('メモの削除に失敗しました: ' + error.message)
   }
 }
