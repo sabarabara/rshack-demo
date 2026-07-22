@@ -5,17 +5,18 @@ import { getDatabase, saveDatabase } from '../database/database'
  * @param {string} title - メモのタイトル
  * @param {string} content - メモの内容
  * @returns {boolean} 成功したかどうか
- * @throws {Error} データベース操作に失敗した場合
  */
 export function createMemo(title, content) {
   const db = getDatabase()
   if (!db) {
-    throw new Error('データベースが利用できません')
+    console.error('データベースが利用できません')
+    return false
   }
 
   // 入力値のバリデーション
   if (!title || !content) {
-    throw new Error('タイトルと内容は必須です')
+    console.error('タイトルと内容は必須です')
+    return false
   }
 
   try {
@@ -32,6 +33,6 @@ export function createMemo(title, content) {
     return true
   } catch (error) {
     console.error('メモの追加に失敗しました:', error)
-    throw new Error('メモの追加に失敗しました: ' + error.message)
+    return false
   }
 }

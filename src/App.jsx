@@ -53,15 +53,12 @@ function App() {
    * @param {string} content - メモの内容
    */
   const handleAddMemo = (title, content) => {
-    try {
-      const success = createMemo(title, content)
-      if (success) {
-        // 追加後に一覧を再読み込み
-        loadMemos()
-      }
-    } catch (err) {
-      console.error('メモの追加に失敗しました:', err)
-      setError(err.message || 'メモの追加に失敗しました')
+    const success = createMemo(title, content)
+    if (success) {
+      // 追加後に一覧を再読み込み
+      loadMemos()
+    } else {
+      setError('メモの追加に失敗しました')
     }
   }
 
@@ -72,15 +69,12 @@ function App() {
    * @param {string} content - 新しい内容
    */
   const handleEditMemo = (id, title, content) => {
-    try {
-      const success = updateMemo(id, title, content)
-      if (success) {
-        // 更新後に一覧を再読み込み
-        loadMemos()
-      }
-    } catch (err) {
-      console.error('メモの更新に失敗しました:', err)
-      setError(err.message || 'メモの更新に失敗しました')
+    const success = updateMemo(id, title, content)
+    if (success) {
+      // 更新後に一覧を再読み込み
+      loadMemos()
+    } else {
+      setError('メモの更新に失敗しました')
     }
   }
 
@@ -89,15 +83,12 @@ function App() {
    * @param {number} id - メモのID
    */
   const handleDeleteMemo = (id) => {
-    try {
-      const success = deleteMemo(id)
-      if (success) {
-        // 削除後に一覧を再読み込み
-        loadMemos()
-      }
-    } catch (err) {
-      console.error('メモの削除に失敗しました:', err)
-      setError(err.message || 'メモの削除に失敗しました')
+    const success = deleteMemo(id)
+    if (success) {
+      // 削除後に一覧を再読み込み
+      loadMemos()
+    } else {
+      setError('メモの削除に失敗しました')
     }
   }
 

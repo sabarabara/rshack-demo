@@ -13,8 +13,6 @@ const DB_STORAGE_KEY = 'memo-database'
  * データベースを初期化する関数
  * sql.jsを読み込み、既存のデータベースがある場合は復元する
  * ない場合は新しいデータベースを作成する
- * @returns {Promise<Database>} データベースインスタンス
- * @throws {Error} 初期化に失敗した場合
  */
 export async function initDatabase() {
   // sql.jsの初期化（WebAssemblyを読み込む）
@@ -54,8 +52,6 @@ export async function initDatabase() {
 
 /**
  * 新しいデータベースを作成する関数
- * @returns {Database} 新しいデータベースインスタンス
- * @throws {Error} データベース作成に失敗した場合
  */
 function createNewDatabase() {
   try {
@@ -86,12 +82,11 @@ function createMemoTable() {
 
 /**
  * データベースをLocalStorageに保存する関数
- * @returns {boolean} 保存に成功したかどうか
  */
 export function saveDatabase() {
   if (!db) {
     console.error('データベースが初期化されていません')
-    return false
+    return
   }
 
   try {
@@ -99,20 +94,10 @@ export function saveDatabase() {
     const data = db.export()
     // Uint8ArrayをJSON保存可能な形式に変換
     const jsonArray = Array.from(data)
-    const jsonString = JSON.stringify(jsonArray)
-
-    // LocalStorageに保存
-    localStorage.setItem(DB_STORAGE_KEY, jsonString)
+    localStorage.setItem(DB_STORAGE_KEY, JSON.stringify(jsonArray))
     console.log('データベースをLocalStorageに保存しました')
-    return true
   } catch (error) {
-    // LocalStorageの容量制限を超えた場合
-    if (error.name === 'QuotaExceededError' || error.code === 22) {
-      console.error('LocalStorageの容量制限を超えました:', error)
-      throw new Error('ストレージの容量が不足しています。古いデータを削除してください。')
-    }
     console.error('データベースの保存に失敗しました:', error)
-    throw new Error('データベースの保存に失敗しました。')
   }
 }
 
