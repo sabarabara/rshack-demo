@@ -4,7 +4,7 @@ import { useState } from 'react'
  * メモ一覧表示コンポーネント
  * メモの一覧を表示し、編集・削除機能を提供する
  */
-function MemoList({ memos, onEditMemo, onDeleteMemo }) {
+function MemoList({ memos = [], onEditMemo, onDeleteMemo }) {
   // 編集中のメモIDを管理
   const [editingId, setEditingId] = useState(null)
 
@@ -43,13 +43,18 @@ function MemoList({ memos, onEditMemo, onDeleteMemo }) {
       return
     }
 
-    // 親コンポーネントの関数を呼び出してメモを更新
-    onEditMemo(id, editTitle, editContent)
+    try {
+      // 親コンポーネントの関数を呼び出してメモを更新
+      onEditMemo(id, editTitle, editContent)
 
-    // 編集モードを終了
-    setEditingId(null)
-    setEditTitle('')
-    setEditContent('')
+      // 編集モードを終了
+      setEditingId(null)
+      setEditTitle('')
+      setEditContent('')
+    } catch (error) {
+      alert('保存に失敗しました')
+      console.error('メモの保存に失敗しました:', error)
+    }
   }
 
   /**
