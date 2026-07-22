@@ -22,18 +22,25 @@ export async function initDatabase() {
   const savedData = localStorage.getItem(DB_STORAGE_KEY)
 
   if (savedData) {
-    // 保存されたデータがある場合は復元
-    const uintArray = new Uint8Array(JSON.parse(savedData))
-    db = new SQL.Database(uintArray)
-    console.log('データベースをLocalStorageから復元しました')
+    try {
+      // 保存されたデータがある場合は復元
+      const uintArray = new Uint8Array(JSON.parse(savedData))
+      db = new SQL.Database(uintArray)
+      console.log('データベースをLocalStorageから復元しました')
+    } catch (error) {
+      // LocalStorageのデータが壊れている場合は新規作成
+      console.error('LocalStorageのデータが壊れています。新規データベースを作成します:', error)
+      localStorage.removeItem(DB_STORAGE_KEY)
+      db = new SQL.Database()
+    }
   } else {
     // 新しいデータベースを作成
     db = new SQL.Database()
     console.log('新しいデータベースを作成しました')
-
-    // memoテーブルを作成
-    createMemoTable()
   }
+
+  // テーブルを作成（IF NOT EXISTSで既存テーブルを保護）
+  createMemoTable()
 
   return db
 }
