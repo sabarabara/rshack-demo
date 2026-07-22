@@ -17,9 +17,10 @@ const DB_STORAGE_KEY = 'memo-database'
 export async function initDatabase() {
   // sql.jsの初期化（WebAssemblyを読み込む）
   try {
-    SQL = await initSqlJs({
-      locateFile: file => `/${file}`
-    })
+    // WASMファイルをローカルから読み込む
+    const wasmResponse = await fetch('/sql-wasm.wasm')
+    const wasmBinary = await wasmResponse.arrayBuffer()
+    SQL = await initSqlJs({ wasmBinary })
   } catch (error) {
     console.error('sql.jsの初期化に失敗しました:', error)
     throw new Error('データベースエンジンの読み込みに失敗しました。インターネット接続を確認してください。')
