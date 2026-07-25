@@ -1,6 +1,6 @@
-import initSqlJs from 'sql.js'
+import initSqlJs from 'sql.js/dist/sql-asm.js'
 
-// sql.jsのWebAssemblyバイト列を保存する変数
+// sql.jsのインスタンスを保存する変数
 let SQL = null
 
 // データベースインスタンスを保持する変数
@@ -15,15 +15,12 @@ const DB_STORAGE_KEY = 'memo-database'
  * ない場合は新しいデータベースを作成する
  */
 export async function initDatabase() {
-  // sql.jsの初期化（WebAssemblyを読み込む）
+  // sql.jsの初期化（ASM.js版を使用、WebAssembly不要）
   try {
-    // WASMファイルをローカルから読み込む
-    const wasmResponse = await fetch('/sql-wasm.wasm')
-    const wasmBinary = await wasmResponse.arrayBuffer()
-    SQL = await initSqlJs({ wasmBinary })
+    SQL = await initSqlJs()
   } catch (error) {
     console.error('sql.jsの初期化に失敗しました:', error)
-    throw new Error('データベースエンジンの読み込みに失敗しました。インターネット接続を確認してください。')
+    throw new Error('データベースエンジンの読み込みに失敗しました。')
   }
 
   // LocalStorageから既存のデータベースを復元
