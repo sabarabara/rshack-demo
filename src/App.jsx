@@ -1,49 +1,27 @@
-import { useState, useEffect } from 'react'
+'use client'
+
+import { useState } from 'react'
 import MemoForm from './components/MemoForm'
 import MemoList from './components/MemoList'
-import { initDatabase } from './database/database'
 import { getMemos } from './sqlite/getMemos'
 import { createMemo } from './sqlite/createMemo'
 import { updateMemo } from './sqlite/updateMemo'
 import { deleteMemo } from './sqlite/deleteMemo'
 
-// メモアプリのメインコンポーネント
-function App() {
-  // メモの一覧を管理
-  const [memos, setMemos] = useState([])
-
-  // データベースの初期化状態を管理
-  const [isDbReady, setIsDbReady] = useState(false)
+// メモアプリのメインコンポーネント（Client Component）
+function App({ initialMemos = [] }) {
+  // メモの一覧を管理（初期値はサーバーから受け取ったデータ）
+  const [memos, setMemos] = useState(initialMemos)
 
   // エラーメッセージを管理
   const [error, setError] = useState('')
 
-  // コンポーネントマウント時にデータベースを初期化
-  useEffect(() => {
-    async function setup() {
-      try {
-        // データベースを初期化（LocalStorageから復元 or 新規作成）
-        await initDatabase()
-        setIsDbReady(true)
-
-        // メモ一覧を読み込み
-        loadMemos()
-      } catch (err) {
-        console.error('データベースの初期化に失敗しました:', err)
-        // エラーメッセージを設定（より詳細な情報を表示）
-        const errorMessage = err.message || 'データベースの初期化に失敗しました'
-        setError(errorMessage)
-      }
-    }
-
-    setup()
-  }, [])
-
   /**
    * メモ一覧を読み込む関数
+   * Server Action（getMemos）を呼び出して最新のデータを取得する
    */
-  const loadMemos = () => {
-    const allMemos = getMemos()
+  const loadMemos = async () => {
+    const allMemos = await getMemos()
     setMemos(allMemos)
   }
 
@@ -52,11 +30,11 @@ function App() {
    * @param {string} title - メモのタイトル
    * @param {string} content - メモの内容
    */
-  const handleAddMemo = (title, content) => {
-    const success = createMemo(title, content)
+  const handleAddMemo = async (title, content) => {
+    const success = await createMemo(title, content)
     if (success) {
       // 追加後に一覧を再読み込み
-      loadMemos()
+      await loadMemos()
     } else {
       setError('メモの追加に失敗しました')
     }
@@ -68,11 +46,11 @@ function App() {
    * @param {string} title - 新しいタイトル
    * @param {string} content - 新しい内容
    */
-  const handleEditMemo = (id, title, content) => {
-    const success = updateMemo(id, title, content)
+  const handleEditMemo = async (id, title, content) => {
+    const success = await updateMemo(id, title, content)
     if (success) {
       // 更新後に一覧を再読み込み
-      loadMemos()
+      await loadMemos()
     } else {
       setError('メモの更新に失敗しました')
     }
@@ -82,24 +60,14 @@ function App() {
    * メモを削除する関数
    * @param {number} id - メモのID
    */
-  const handleDeleteMemo = (id) => {
-    const success = deleteMemo(id)
+  const handleDeleteMemo = async (id) => {
+    const success = await deleteMemo(id)
     if (success) {
       // 削除後に一覧を再読み込み
-      loadMemos()
+      await loadMemos()
     } else {
       setError('メモの削除に失敗しました')
     }
-  }
-
-  // データベースの初期化を待っている場合
-  if (!isDbReady) {
-    return (
-      <div className="app">
-        <h1>メモアプリ</h1>
-        <p>データベースを初期化中...</p>
-      </div>
-    )
   }
 
   return (
