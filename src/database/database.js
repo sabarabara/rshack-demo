@@ -1,66 +1,38 @@
-import initSqlJs from 'sql.js/dist/sql-asm.js'
+import { DatabaseSync } from 'node:sqlite'
+import fs from 'node:fs'
+import path from 'node:path'
 
-// sql.jsのインスタンスを保存する変数
-let SQL = null
-
-// データベースインスタンスを保持する変数
+// データベースインスタンスを保持する変数（サーバー起動中は同じものを使い続ける）
 let db = null
 
-// LocalStorageのキー名
-const DB_STORAGE_KEY = 'memo-database'
-
 /**
- * データベースを初期化する関数
- * sql.jsを読み込み、既存のデータベースがある場合は復元する
- * ない場合は新しいデータベースを作成する
+ * データベースを取得する関数
+ * 初回呼び出し時にDBファイルを作成し、memoテーブルを生成する
+ * @returns {DatabaseSync|null} データベースインスタンス（失敗時はnull）
  */
-export async function initDatabase() {
-  // sql.jsの初期化（ASM.js版を使用、WebAssembly不要）
-  try {
-    SQL = await initSqlJs()
-  } catch (error) {
-    console.error('sql.jsの初期化に失敗しました:', error)
-    throw new Error('データベースエンジンの読み込みに失敗しました。')
+export function getDatabase() {
+  // すでに初期化済みなら同じインスタンスを返す
+  if (db) {
+    return db
   }
 
-  // LocalStorageから既存のデータベースを復元
-  const savedData = localStorage.getItem(DB_STORAGE_KEY)
-
-  if (savedData) {
-    try {
-      // 保存されたデータがある場合は復元
-      const jsonData = JSON.parse(savedData)
-      const uintArray = new Uint8Array(jsonData)
-      db = new SQL.Database(uintArray)
-      console.log('データベースをLocalStorageから復元しました')
-    } catch (error) {
-      // LocalStorageのデータが壊れている場合は新規作成
-      console.error('LocalStorageのデータが壊れています。新規データベースを作成します:', error)
-      localStorage.removeItem(DB_STORAGE_KEY)
-      db = createNewDatabase()
-    }
-  } else {
-    // 新しいデータベースを作成
-    db = createNewDatabase()
-  }
-
-  // テーブルを作成（IF NOT EXISTSで既存テーブルを保護）
-  createMemoTable()
-
-  return db
-}
-
-/**
- * 新しいデータベースを作成する関数
- */
-function createNewDatabase() {
   try {
-    const newDb = new SQL.Database()
-    console.log('新しいデータベースを作成しました')
-    return newDb
+    // dataディレクトリを自動作成（ない場合のみ）
+    const dataDir = path.join(process.cwd(), 'data')
+    fs.mkdirSync(dataDir, { recursive: true })
+
+    // DBファイルのパスを指定してデータベースを開く
+    const dbPath = path.join(dataDir, 'memo.db')
+    db = new DatabaseSync(dbPath)
+    console.log('データベースを開きました:', dbPath)
+
+    // memoテーブルを作成
+    createMemoTable()
+
+    return db
   } catch (error) {
-    console.error('データベースの作成に失敗しました:', error)
-    throw new Error('データベースの作成に失敗しました。ブラウザの設定を確認してください。')
+    console.error('データベースの初期化に失敗しました:', error)
+    return null
   }
 }
 
@@ -76,38 +48,6 @@ function createMemoTable() {
       created_at TEXT NOT NULL
     )
   `
-  db.run(sql)
+  db.exec(sql)
   console.log('memoテーブルを作成しました')
-}
-
-/**
- * データベースをLocalStorageに保存する関数
- */
-export function saveDatabase() {
-  if (!db) {
-    console.error('データベースが初期化されていません')
-    return
-  }
-
-  try {
-    // データベースのバイナリデータを取得
-    const data = db.export()
-    // Uint8ArrayをJSON保存可能な形式に変換
-    const jsonArray = Array.from(data)
-    localStorage.setItem(DB_STORAGE_KEY, JSON.stringify(jsonArray))
-    console.log('データベースをLocalStorageに保存しました')
-  } catch (error) {
-    console.error('データベースの保存に失敗しました:', error)
-  }
-}
-
-/**
- * データベースインスタンスを取得する関数
- */
-export function getDatabase() {
-  if (!db) {
-    console.error('データベースが初期化されていません')
-    return null
-  }
-  return db
 }
