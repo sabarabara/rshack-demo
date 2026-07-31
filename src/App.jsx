@@ -1,28 +1,48 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import MemoForm from './components/MemoForm'
 import MemoList from './components/MemoList'
-import { getMemos } from './sqlite/getMemos'
-import { createMemo } from './sqlite/createMemo'
-import { updateMemo } from './sqlite/updateMemo'
-import { deleteMemo } from './sqlite/deleteMemo'
 
 // メモアプリのメインコンポーネント（Client Component）
-function App({ initialMemos = [] }) {
-  // メモの一覧を管理（初期値はサーバーから受け取ったデータ）
-  const [memos, setMemos] = useState(initialMemos)
+function App() {
+  // メモの一覧を管理
+  const [memos, setMemos] = useState([])
+
+  // 読み込み中かどうかを管理
+  const [isLoading, setIsLoading] = useState(true)
 
   // エラーメッセージを管理
   const [error, setError] = useState('')
 
+  // コンポーネントが表示されたときにメモ一覧を取得する
+  useEffect(() => {
+    loadMemos()
+  }, [])
+
   /**
    * メモ一覧を読み込む関数
-   * Server Action（getMemos）を呼び出して最新のデータを取得する
+   * GET /api/memos を呼び出して最新のデータを取得する
    */
   const loadMemos = async () => {
-    const allMemos = await getMemos()
-    setMemos(allMemos)
+    try {
+      // メモ一覧を取得するAPIを呼び出し
+      const response = await fetch('/api/memos')
+      const data = await response.json()
+
+      // エラーレスポンスなら例外を発生させる
+      if (!response.ok) {
+        throw new Error(data.error || 'メモの取得に失敗しました')
+      }
+
+      setMemos(data)
+    } catch (err) {
+      console.error('メモの取得に失敗しました:', err)
+      setError(err.message || 'メモの取得に失敗しました')
+    } finally {
+      // 読み込み完了（成功・失敗どちらでも）
+      setIsLoading(false)
+    }
   }
 
   /**
@@ -31,12 +51,25 @@ function App({ initialMemos = [] }) {
    * @param {string} content - メモの内容
    */
   const handleAddMemo = async (title, content) => {
-    const success = await createMemo(title, content)
-    if (success) {
+    try {
+      // メモを追加するAPIを呼び出し
+      const response = await fetch('/api/memos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, content }),
+      })
+      const data = await response.json()
+
+      // エラーレスポンスなら例外を発生させる
+      if (!response.ok) {
+        throw new Error(data.error || 'メモの追加に失敗しました')
+      }
+
       // 追加後に一覧を再読み込み
       await loadMemos()
-    } else {
-      setError('メモの追加に失敗しました')
+    } catch (err) {
+      console.error('メモの追加に失敗しました:', err)
+      setError(err.message || 'メモの追加に失敗しました')
     }
   }
 
@@ -47,12 +80,25 @@ function App({ initialMemos = [] }) {
    * @param {string} content - 新しい内容
    */
   const handleEditMemo = async (id, title, content) => {
-    const success = await updateMemo(id, title, content)
-    if (success) {
+    try {
+      // メモを更新するAPIを呼び出し
+      const response = await fetch(`/api/memos/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, content }),
+      })
+      const data = await response.json()
+
+      // エラーレスポンスなら例外を発生させる
+      if (!response.ok) {
+        throw new Error(data.error || 'メモの更新に失敗しました')
+      }
+
       // 更新後に一覧を再読み込み
       await loadMemos()
-    } else {
-      setError('メモの更新に失敗しました')
+    } catch (err) {
+      console.error('メモの更新に失敗しました:', err)
+      setError(err.message || 'メモの更新に失敗しました')
     }
   }
 
@@ -61,12 +107,23 @@ function App({ initialMemos = [] }) {
    * @param {number} id - メモのID
    */
   const handleDeleteMemo = async (id) => {
-    const success = await deleteMemo(id)
-    if (success) {
+    try {
+      // メモを削除するAPIを呼び出し
+      const response = await fetch(`/api/memos/${id}`, {
+        method: 'DELETE',
+      })
+      const data = await response.json()
+
+      // エラーレスポンスなら例外を発生させる
+      if (!response.ok) {
+        throw new Error(data.error || 'メモの削除に失敗しました')
+      }
+
       // 削除後に一覧を再読み込み
       await loadMemos()
-    } else {
-      setError('メモの削除に失敗しました')
+    } catch (err) {
+      console.error('メモの削除に失敗しました:', err)
+      setError(err.message || 'メモの削除に失敗しました')
     }
   }
 
@@ -85,12 +142,16 @@ function App({ initialMemos = [] }) {
       {/* メモ入力フォーム */}
       <MemoForm onAddMemo={handleAddMemo} />
 
-      {/* メモ一覧 */}
-      <MemoList
-        memos={memos}
-        onEditMemo={handleEditMemo}
-        onDeleteMemo={handleDeleteMemo}
-      />
+      {/* メモ一覧（読み込み中はメッセージを表示） */}
+      {isLoading ? (
+        <p>読み込み中...</p>
+      ) : (
+        <MemoList
+          memos={memos}
+          onEditMemo={handleEditMemo}
+          onDeleteMemo={handleDeleteMemo}
+        />
+      )}
     </div>
   )
 }
