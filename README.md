@@ -25,7 +25,7 @@ Next.js（App Router）とSQLite（node:sqlite）を使用したメモアプリ�
 
 ### 前提条件
 
-- Node.js 22.5以上（node:sqliteを使用するため）
+- Node.js 22.13以上（node:sqliteを使用するため）
 - npm
 
 ### セットアップ
