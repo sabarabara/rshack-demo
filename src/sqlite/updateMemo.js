@@ -1,9 +1,8 @@
-'use server'
-
 import { getDatabase } from '../database/database'
 
 /**
- * メモを更新するServer Action
+ * メモを更新するDB関数
+ * Route Handler（app/api/memos/[id]/route.js）から呼び出される
  * @param {number} id - メモのID
  * @param {string} title - 新しいタイトル
  * @param {string} content - 新しい内容

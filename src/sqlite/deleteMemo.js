@@ -1,9 +1,8 @@
-'use server'
-
 import { getDatabase } from '../database/database'
 
 /**
- * メモを削除するServer Action
+ * メモを削除するDB関数
+ * Route Handler（app/api/memos/[id]/route.js）から呼び出される
  * @param {number} id - メモのID
  * @returns {Promise<boolean>} 成功したかどうか
  */

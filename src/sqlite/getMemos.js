@@ -1,10 +1,8 @@
-'use server'
-
 import { getDatabase } from '../database/database'
 
 /**
- * 全てのメモを取得するServer Action
- * ブラウザから直接呼び出せる
+ * 全てのメモを取得するDB関数
+ * Route Handler（app/api/memos/route.js）から呼び出される
  * @returns {Promise<Array>} メモの配列
  */
 export async function getMemos() {

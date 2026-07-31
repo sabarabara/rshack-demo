@@ -1,9 +1,8 @@
-'use server'
-
 import { getDatabase } from '../database/database'
 
 /**
- * 新しいメモを追加するServer Action
+ * 新しいメモを追加するDB関数
+ * Route Handler（app/api/memos/route.js）から呼び出される
  * @param {string} title - メモのタイトル
  * @param {string} content - メモの内容
  * @returns {Promise<boolean>} 成功したかどうか
