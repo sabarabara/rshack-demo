@@ -5,14 +5,15 @@
 ## 概要
 
 Next.js（App Router）とSQLite（node:sqlite）を使用したメモアプリです。
-データベースはサーバー側で動作し、ブラウザからはServer Actions経由で操作します。
+ブラウザはREST API（Route Handler）をfetchで呼び出し、サーバー側のSQLiteを操作します。
+ブラウザの開発者ツール（Networkタブ）でAPI通信を確認できます。
 
 ## 機能
 
-- メモの追加
-- メモの一覧表示
-- メモの編集
-- メモの削除
+- メモの追加（POST /api/memos）
+- メモの一覧表示（GET /api/memos）
+- メモの編集（PUT /api/memos/[id]）
+- メモの削除（DELETE /api/memos/[id]）
 - サーバー側SQLiteによるデータ永続化
 
 ## 技術スタック
@@ -45,6 +46,11 @@ npm run dev
 ```
 
 ブラウザで http://localhost:3000 を開いてください。
+メモの追加・編集・削除を行った後、開発者ツールのNetworkタブでAPI通信を確認できます。
+
+## データの流れ
+
+ブラウザ → fetch → Route Handler（app/api/*）→ DB関数（src/sqlite/*.js）→ SQLite（data/memo.db）
 
 ## ディレクトリ構成
 
@@ -54,6 +60,11 @@ memo-demo/
 ├── jsconfig.json         # パスエイリアス設定
 ├── README.md             # このファイル
 ├── app/
+│   ├── api/
+│   │   ├── memos/
+│   │   │   ├── route.js      # GET/POST（一覧取得・追加）
+│   │   │   └── [id]/
+│   │   │       └── route.js  # PUT/DELETE（更新・削除）
 │   ├── layout.jsx        # ルートレイアウト（CSS読み込み）
 │   └── page.jsx          # ホームページ（Server Component）
 ├── data/
@@ -79,14 +90,16 @@ memo-demo/
 |---------|------|---------------|
 | app/layout.jsx | Server Component | なし |
 | app/page.jsx | Server Component | なし |
+| app/api/memos/route.js | Route Handler | なし |
+| app/api/memos/[id]/route.js | Route Handler | なし |
 | src/App.jsx | Client Component | use client |
 | src/components/MemoForm.jsx | Client Component | use client |
 | src/components/MemoList.jsx | Client Component | use client |
 | src/database/database.js | Server専用 | なし |
-| src/sqlite/*.js | Server Actions | use server |
+| src/sqlite/*.js | Server専用 | なし |
 
 - `use client`: ブラウザ側で動作するコンポーネント
-- `use server`: サーバー側で動作し、ブラウザから直接呼び出せる関数
+- Route Handler: サーバー側で動くAPI。ブラウザからfetchで呼び出す
 
 ## 使用ライブラリ
 
@@ -103,13 +116,19 @@ memo-demo/
 ルートレイアウト。全ページ共通のHTML構造とグローバルCSSの読み込みを行います。
 
 ### app/page.jsx
-ホームページ（Server Component）。サーバー側でSQLiteからメモ一覧を取得し、Appコンポーネントへ渡します。
+ホームページ（Server Component）。Appコンポーネントを表示します。データ取得はClient Componentがfetchで行います。
+
+### app/api/memos/route.js
+メモ一覧取得（GET）と追加（POST）を行うAPIです。
+
+### app/api/memos/[id]/route.js
+メモ更新（PUT）と削除（DELETE）を行うAPIです。
 
 ### src/App.jsx
 メインコンポーネント（Client Component）。以下の責務を持ちます：
 - メモ一覧の状態管理
+- fetchによるAPI呼び出し（GET/POST/PUT/DELETE）
 - 各操作（追加・更新・削除）のハンドリング
-- Server Actionsの呼び出し
 
 ### src/database/database.js
 node:sqliteでデータベースファイルを開き、memoテーブルを作成します。初回呼び出し時に自動で初期化されます。
@@ -121,26 +140,33 @@ node:sqliteでデータベースファイルを開き、memoテーブルを作�
 メモ一覧表示コンポーネント。テーブル形式でメモを表示し、編集・削除機能を提供します。
 
 ### src/sqlite/createMemo.js
-メモ追加のServer Action。INSERT文を使用して新しいメモをデータベースに追加します。
+メモ追加のDB関数。INSERT文を使用して新しいメモをデータベースに追加します。
 
 ### src/sqlite/getMemos.js
-メモ取得のServer Action。SELECT文を使用して全てのメモを取得します。
+メモ取得のDB関数。SELECT文を使用して全てのメモを取得します。
 
 ### src/sqlite/updateMemo.js
-メモ更新のServer Action。UPDATE文を使用して既存のメモを更新します。
+メモ更新のDB関数。UPDATE文を使用して既存のメモを更新します。
 
 ### src/sqlite/deleteMemo.js
-メモ削除のServer Action。DELETE文を使用してメモを削除します。
+メモ削除のDB関数。DELETE文を使用してメモを削除します。
 
 ## 学習ポイント
 
 ### Next.js
 - Server ComponentとClient Componentの区別（use client）
-- Server Actions（use server）
+- Route Handler（app/api/*）
 - サーバー側でのデータベースアクセス
+
+### REST API
+- fetchによるAPI呼び出し（GET/POST/PUT/DELETE）
+- HTTPステータスコード（200/201/400）
+- JSONでのデータ受け渡し
+- ブラウザのNetworkタブでの通信確認
 
 ### React
 - useState: コンポーネントの状態管理
+- useEffect: マウント時のデータ取得
 - プロパティによるコンポーネント間の通信
 - イベントハンドリング
 
