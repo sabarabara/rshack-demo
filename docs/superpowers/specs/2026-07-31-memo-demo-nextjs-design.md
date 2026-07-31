@@ -1,4 +1,4 @@
-# ハンズオンデモアプリ 開発仕様書（Next.js版）
+# ハンズオンデモアプリ 開発仕様書（Next.js + REST API版）
 
 ## 1. 概要
 
@@ -12,7 +12,7 @@
 
 ことを重視する。
 
-Next.jsで実装する。データベースはサーバー側のSQLite（node:sqlite）で動作させ、ブラウザからはServer Actions経由で操作する。
+Next.jsで実装する。データベースはサーバー側のSQLite（node:sqlite）で動作させ、ブラウザからはRoute Handlerで作成したREST API（fetch）経由で操作する。
 
 ---
 
@@ -22,13 +22,13 @@ Next.jsで実装する。データベースはサーバー側のSQLite（node:sq
 
 - Next.jsによる画面開発（App Router）
 - Server Component / Client Component の区別（`use client`）
-- Server Actions（`use server`）
+- Route HandlerによるREST APIの実装（`app/api/`）
+- fetchによるAPI呼び出し
+- HTTPメソッド（GET / POST / PUT / DELETE）
 - State管理
 - Component分割
 - SQLiteの基本的なCRUD操作
 - サーバーサイドでのデータベース利用
-
-今回はREST APIの設計・実装は扱わない（Server Actionsで代替する）。
 
 ---
 
@@ -40,11 +40,16 @@ Next.jsで実装する。データベースはサーバー側のSQLite（node:sq
 - React
 - JavaScript
 
+### API
+
+- Route Handler（REST API）
+- fetch
+
 ### Database
 
 - SQLite（node:sqlite）
 
-node:sqliteはNode.js 22.5以降に組み込まれており、追加のインストールが不要。
+node:sqliteはNode.js 22.13以降に組み込まれており、追加のインストールが不要。
 
 ---
 
@@ -59,7 +64,6 @@ node:sqliteはNode.js 22.5以降に組み込まれており、追加のインス
 - Redux
 - Zustand
 - Prisma
-- REST API
 - 認証
 - デプロイ
 
@@ -167,6 +171,11 @@ SQLiteデータベースはサーバー上のファイルに保存する。
 ```
 memo-demo/
   app/
+    api/
+      memos/
+        route.js
+        [id]/
+          route.js
     layout.jsx
     page.jsx
   src/
@@ -198,29 +207,46 @@ memo-demo/
 | --- | --- | --- |
 | app/layout.jsx | Server Component | なし |
 | app/page.jsx | Server Component | なし |
+| app/api/memos/route.js | Route Handler | なし |
+| app/api/memos/[id]/route.js | Route Handler | なし |
 | src/App.jsx | Client Component | use client |
 | src/components/MemoForm.jsx | Client Component | use client |
 | src/components/MemoList.jsx | Client Component | use client |
 | src/database/database.js | Server専用 | なし（サーバー側からのみimport） |
-| src/sqlite/*.js | Server Actions | use server |
+| src/sqlite/*.js | Server専用 | なし（Route Handlerからのみimport） |
 
-`use server` を付けた関数はブラウザから直接呼び出せるServer Actionsとなる。
+Route Handlerはサーバー側でHTTPリクエストを処理し、ブラウザから`fetch()`で呼び出せる。
+
+`src/sqlite/*.js`は`use server`を使わず、Route Handlerからサーバー内で直接呼び出すDB関数とする。
 
 ---
 
-## 12. データの流れ
+## 12. API仕様とデータの流れ
+
+### API仕様
+
+| メソッド | パス | 機能 | 成功時 |
+| --- | --- | --- | --- |
+| GET | /api/memos | メモ一覧取得 | 200 + メモ配列 |
+| POST | /api/memos | メモ追加 | 201 + { success: true } |
+| PUT | /api/memos/[id] | メモ更新 | 200 + { success: true } |
+| DELETE | /api/memos/[id] | メモ削除 | 200 + { success: true } |
+
+失敗時は 400 + { error: メッセージ } を返す。
 
 ### 初期表示
 
-`app/page.jsx`（Server Component）が `getMemos()` を呼び出し、初期のメモ一覧を取得してClient Componentへpropsで渡す。
+`App.jsx`（Client Component）がマウント時に`fetch('/api/memos')`で一覧を取得する。読み込み中は「読み込み中...」を表示する。
 
 ### 追加
 
-`MemoForm` が `createMemo()`（Server Action）を呼び出し、サーバー側でINSERTを実行する。
+`App.jsx` が`fetch('/api/memos', { method: 'POST', body: JSON.stringify({title, content}) })`でサーバーに送信する。
 
 ### 更新・削除
 
-`MemoList` が `updateMemo()` / `deleteMemo()`（Server Action）を呼び出し、サーバー側でUPDATE / DELETEを実行する。
+`App.jsx` が`fetch('/api/memos/{id}', { method: 'PUT' / 'DELETE' })`でサーバーに送信する。
+
+各操作後は一覧を再取得する。API呼び出しはすべてブラウザのNetworkタブで確認できる。
 
 ---
 
@@ -287,7 +313,7 @@ SQL実行に失敗した場合は
 
 ユーザーには簡単なエラーメッセージを表示する。
 
-Server Action呼び出しの失敗（SQLエラー・ネットワークエラー）も同様に、console.errorとユーザーへの簡易メッセージ表示で対応する。
+API呼び出しの失敗（レスポンスのエラー・ネットワークエラー）も同様に、console.errorとユーザーへの簡易メッセージ表示で対応する。
 
 ---
 
@@ -296,7 +322,7 @@ Server Action呼び出しの失敗（SQLエラー・ネットワークエラー�
 初心者向け教材であるため、
 
 - React
-- Next.js（use client / use server の解説）
+- Next.js（use client / Route Handler の解説）
 - SQL
 - 各関数
 
@@ -319,10 +345,11 @@ Server Action呼び出しの失敗（SQLエラー・ネットワークエラー�
 以下を満たしたら完成とする。
 
 - Next.jsで画面が表示される
-- メモ追加ができる
-- メモ一覧表示ができる
-- メモ編集ができる
-- メモ削除ができる
+- メモ追加ができる（POST /api/memos）
+- メモ一覧表示ができる（GET /api/memos）
+- メモ編集ができる（PUT /api/memos/[id]）
+- メモ削除ができる（DELETE /api/memos/[id]）
+- NetworkタブでAPI呼び出しが確認できる
 - サーバー側SQLiteへ保存される
 - サーバー再起動後もデータが残る
 
@@ -335,12 +362,13 @@ Server Action呼び出しの失敗（SQLエラー・ネットワークエラー�
 1. 初心者向け教材であることを最優先する。
 2. Next.js（App Router）で実装する。
 3. 画面のコンポーネントには `use client` を付与する。
-4. SQLite操作の関数には `use server` を付与し、Server Actionsとして実装する。
-5. データベースはnode:sqliteを使用し、サーバー側で動作させる。
-6. SQLを直接記述し、ORMやラッパーライブラリは使用しない。
-7. 複雑な設計パターンは採用しない。
-8. 各機能は可能な限り独立したファイルに分割する。
-9. コードの重複は許容する。
-10. READMEを作成し、環境構築、起動方法、ディレクトリ構成、使用ライブラリ、各ファイルの役割を記載する。
-11. すべてのソースコードには教材として理解しやすいコメントを付与する。
-12. 第3回～第6回の勉強会で段階的に実装・解説できる構成とする。
+4. REST APIは `app/api/` 配下のRoute Handlerで実装する（`src/sqlite/*.js`には `use server` を付けない）。
+5. ブラウザ側は `fetch()` でAPIを呼び出し、SQLiteには直接アクセスしない。
+6. データベースはnode:sqliteを使用し、サーバー側で動作させる。
+7. SQLを直接記述し、ORMやラッパーライブラリは使用しない。
+8. 複雑な設計パターンは採用しない。
+9. 各機能は可能な限り独立したファイルに分割する。
+10. コードの重複は許容する。
+11. READMEを作成し、環境構築、起動方法、ディレクトリ構成、使用ライブラリ、各ファイルの役割を記載する。
+12. すべてのソースコードには教材として理解しやすいコメントを付与する。
+13. 第3回～第6回の勉強会で段階的に実装・解説できる構成とする。
