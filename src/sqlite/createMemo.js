@@ -1,12 +1,14 @@
-import { getDatabase, saveDatabase } from '../database/database'
+'use server'
+
+import { getDatabase } from '../database/database'
 
 /**
- * 新しいメモを追加する関数
+ * 新しいメモを追加するServer Action
  * @param {string} title - メモのタイトル
  * @param {string} content - メモの内容
- * @returns {boolean} 成功したかどうか
+ * @returns {Promise<boolean>} 成功したかどうか
  */
-export function createMemo(title, content) {
+export async function createMemo(title, content) {
   const db = getDatabase()
   if (!db) {
     console.error('データベースが利用できません')
@@ -25,10 +27,8 @@ export function createMemo(title, content) {
 
     // プリペアドステートメントでSQLインジェクションを防ぐ
     const sql = 'INSERT INTO memo (title, content, created_at) VALUES (?, ?, ?)'
-    db.run(sql, [title, content, createdAt])
+    db.prepare(sql).run(title, content, createdAt)
 
-    // データベースをLocalStorageに保存
-    saveDatabase()
     console.log('メモを追加しました:', title)
     return true
   } catch (error) {

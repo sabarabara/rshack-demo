@@ -1,13 +1,15 @@
-import { getDatabase, saveDatabase } from '../database/database'
+'use server'
+
+import { getDatabase } from '../database/database'
 
 /**
- * メモを更新する関数
+ * メモを更新するServer Action
  * @param {number} id - メモのID
  * @param {string} title - 新しいタイトル
  * @param {string} content - 新しい内容
- * @returns {boolean} 成功したかどうか
+ * @returns {Promise<boolean>} 成功したかどうか
  */
-export function updateMemo(id, title, content) {
+export async function updateMemo(id, title, content) {
   const db = getDatabase()
   if (!db) {
     console.error('データベースが利用できません')
@@ -23,10 +25,8 @@ export function updateMemo(id, title, content) {
   try {
     // プリペアドステートメントでSQLインジェクションを防ぐ
     const sql = 'UPDATE memo SET title = ?, content = ? WHERE id = ?'
-    db.run(sql, [title, content, id])
+    db.prepare(sql).run(title, content, id)
 
-    // データベースをLocalStorageに保存
-    saveDatabase()
     console.log('メモを更新しました:', id)
     return true
   } catch (error) {

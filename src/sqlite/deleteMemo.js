@@ -1,11 +1,13 @@
-import { getDatabase, saveDatabase } from '../database/database'
+'use server'
+
+import { getDatabase } from '../database/database'
 
 /**
- * メモを削除する関数
+ * メモを削除するServer Action
  * @param {number} id - メモのID
- * @returns {boolean} 成功したかどうか
+ * @returns {Promise<boolean>} 成功したかどうか
  */
-export function deleteMemo(id) {
+export async function deleteMemo(id) {
   const db = getDatabase()
   if (!db) {
     console.error('データベースが利用できません')
@@ -21,10 +23,8 @@ export function deleteMemo(id) {
   try {
     // プリペアドステートメントでSQLインジェクションを防ぐ
     const sql = 'DELETE FROM memo WHERE id = ?'
-    db.run(sql, [id])
+    db.prepare(sql).run(id)
 
-    // データベースをLocalStorageに保存
-    saveDatabase()
     console.log('メモを削除しました:', id)
     return true
   } catch (error) {
