@@ -16,7 +16,11 @@ export async function getMemos() {
 
   try {
     // SQLで全メモを取得（新しい順にソート）
-    const memos = db.prepare('SELECT * FROM memo ORDER BY id DESC').all()
+    const rows = db.prepare('SELECT * FROM memo ORDER BY id DESC').all()
+
+    // node:sqliteの結果は特別なオブジェクトのため、通常のオブジェクトに変換して返す
+    // （そのまま返すとNext.jsの画面表示でエラーになる）
+    const memos = rows.map((memo) => ({ ...memo }))
     return memos
   } catch (error) {
     console.error('メモの取得に失敗しました:', error)
